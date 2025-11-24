@@ -2,8 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-/// A tuple of [PointerDataPacket] and [DateTime] when the packet was captured.
-typedef CapturedPointerData = ({PointerDataPacket packet, DateTime timestamp});
+import 'package:gesture_recorder/src/recorded_data.dart';
 
 /// The state of the gesture recorder.
 enum RecordState { none, recording, playing }
@@ -11,13 +10,13 @@ enum RecordState { none, recording, playing }
 /// A widget that records all the gesture events happening during recording.
 ///
 /// [GestureRecorder] captures all the gesture events reported by the platform and
-/// expose [List<CapturedPointerData>] as a result of recording.
+/// expose [RecordedGestureData] as a result of recording.
 ///
 /// [GestureRecorder] must be placed at the root (or almost root) of the widget tree
 /// so that its descendant can call [start], [stop], and [replay] methods
 /// by finding [GestureRecorder] as the result of traversing [BuildContext].
 ///
-/// Once the value of [List<CapturedPointerData>] is obtained by [stop] method,
+/// Once the value of [RecordedGestureData] is obtained by [stop] method,
 /// you can replay the recorded events by calling [replay] method with passing the value as-is.
 class GestureRecorder extends StatefulWidget {
   const GestureRecorder({super.key, required this.child});
@@ -52,17 +51,17 @@ class GestureRecorder extends StatefulWidget {
   }
 
   /// Stops recording gesture events and returns the recorded event data.
-  static Future<List<CapturedPointerData>> stop(BuildContext context) async {
+  static Future<RecordedGestureData> stop(BuildContext context) async {
     return _of(context)._stop();
   }
 
   /// Replays the recorded gesture events.
-  /// [pointerHistory] is typically obtained by [stop] method.
+  /// [recordedData] is typically obtained by [stop] method.
   static Future<void> replay(
     BuildContext context,
-    List<CapturedPointerData> pointerHistory,
+    RecordedGestureData recordedData,
   ) async {
-    return _of(context)._replay(pointerHistory);
+    return _of(context)._replay(recordedData);
   }
 
   /// Creates [_GestureRecorderState] instance for Flutter framework.
@@ -73,19 +72,48 @@ class GestureRecorder extends StatefulWidget {
 /// The state of the gesture recorder.
 /// This operates a recording and replaying of gesture events.
 class _GestureRecorderState extends State<GestureRecorder> {
-  final List<CapturedPointerData> _pointerData = [];
+  final List<RecordedEvent> _events = [];
+  Size? _screenSize;
+  DateTime? _previousTimestamp;
   void Function()? _restoreFunc;
   RecordState _state = RecordState.none;
 
   void _start() {
     final dispatcher = PlatformDispatcher.instance.onPointerDataPacket;
     if (dispatcher != null) {
+      // Capture screen size
+      final view = PlatformDispatcher.instance.views.firstOrNull;
+      if (view != null) {
+        _screenSize = view.physicalSize / view.devicePixelRatio;
+      } else {
+        // Fallback to a default size if view is not available
+        _screenSize = const Size(0, 0);
+      }
+
       setState(() {
         _state = RecordState.recording;
       });
 
+      _previousTimestamp = null;
+
       void wrappedFunc(PointerDataPacket packet) {
-        _pointerData.add((packet: packet, timestamp: DateTime.now()));
+        final now = DateTime.now();
+        final recordedPacket =
+            RecordedPointerDataPacket.fromPointerDataPacket(packet);
+
+        Duration timeSincePrevious;
+        if (_previousTimestamp == null) {
+          timeSincePrevious = Duration.zero;
+        } else {
+          timeSincePrevious = now.difference(_previousTimestamp!);
+        }
+
+        _events.add((
+          packet: recordedPacket,
+          timeSincePrevious: timeSincePrevious,
+        ));
+
+        _previousTimestamp = now;
         dispatcher(packet);
       }
 
@@ -95,7 +123,7 @@ class _GestureRecorderState extends State<GestureRecorder> {
     }
   }
 
-  List<CapturedPointerData> _stop() {
+  RecordedGestureData _stop() {
     setState(() {
       _state = RecordState.none;
     });
@@ -104,12 +132,21 @@ class _GestureRecorderState extends State<GestureRecorder> {
       _restoreFunc!();
       _restoreFunc = null;
     }
-    final copied = [..._pointerData];
-    _pointerData.clear();
-    return copied;
+
+    final screenSize = _screenSize ?? const Size(0, 0);
+    final result = RecordedGestureData(
+      events: [..._events],
+      screenSize: screenSize,
+    );
+
+    _events.clear();
+    _screenSize = null;
+    _previousTimestamp = null;
+
+    return result;
   }
 
-  Future<void> _replay(List<CapturedPointerData> pointerHistory) async {
+  Future<void> _replay(RecordedGestureData recordedData) async {
     final dispatcher = PlatformDispatcher.instance.onPointerDataPacket;
     if (dispatcher == null) {
       return;
@@ -119,16 +156,11 @@ class _GestureRecorderState extends State<GestureRecorder> {
       _state = RecordState.playing;
     });
 
-    DateTime? previousTime;
-    for (final historyItem in pointerHistory) {
-      if (previousTime != null) {
-        final delay = historyItem.timestamp.difference(previousTime);
-        if (delay.inMicroseconds > 0) {
-          await Future.delayed(delay);
-        }
+    for (final event in recordedData.events) {
+      if (event.timeSincePrevious.inMicroseconds > 0) {
+        await Future.delayed(event.timeSincePrevious);
       }
-      dispatcher(historyItem.packet);
-      previousTime = historyItem.timestamp;
+      dispatcher(event.packet.toPointerDataPacket());
     }
 
     setState(() {

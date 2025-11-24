@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gesture_recorder/gesture_recorder.dart';
+import 'shared_preferences.dart' as persistence;
 
 void main() {
   runApp(GestureRecorder(child: const MyApp()));
@@ -31,20 +32,20 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  List<CapturedPointerData>? _pointerHistory;
+  RecordedGestureData? _recordedData;
 
   Future<void> _toggleRecordState(RecordState recordState) async {
     switch (recordState) {
       case RecordState.none:
-        if (_pointerHistory != null) {
-          await GestureRecorder.replay(context, _pointerHistory!);
+        if (_recordedData != null) {
+          await GestureRecorder.replay(context, _recordedData!);
         } else {
           GestureRecorder.start(context);
         }
       case RecordState.recording:
-        final history = await GestureRecorder.stop(context);
+        final data = await GestureRecorder.stop(context);
         setState(() {
-          _pointerHistory = history;
+          _recordedData = data;
         });
       case RecordState.playing:
         // do nothing
@@ -52,10 +53,42 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<void> _saveData() async {
+    if (_recordedData == null) return;
+    final success = await persistence.saveRecordedData(_recordedData!);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(success ? 'Data saved successfully' : 'Failed to save data'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _restoreData() async {
+    final data = await persistence.fetchRecordedData();
+    if (mounted) {
+      if (data != null) {
+        setState(() {
+          _recordedData = data;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No saved data found'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final recordState = GestureRecorder.stateOf(context);
-    final hasHistory = _pointerHistory != null;
+    final hasHistory = _recordedData != null;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -100,6 +133,53 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: (hasHistory &&
+                          recordState != RecordState.recording &&
+                          recordState != RecordState.playing)
+                      ? _saveData
+                      : null,
+                  icon: const Icon(Icons.save),
+                  label: const Text('Save'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: (recordState != RecordState.recording &&
+                          recordState != RecordState.playing)
+                      ? _restoreData
+                      : null,
+                  icon: const Icon(Icons.restore),
+                  label: const Text('Restore'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (hasHistory) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Events: ${_recordedData!.events.length}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                'Screen size: ${_recordedData!.screenSize.width.toStringAsFixed(0)} x ${_recordedData!.screenSize.height.toStringAsFixed(0)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ],
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gesture_recorder/gesture_recorder.dart';
 import 'package:scribble/scribble.dart';
+import 'shared_preferences.dart' as persistence;
 
 class DrawingCanvasExample extends StatelessWidget {
   const DrawingCanvasExample({super.key});
@@ -26,7 +27,7 @@ class DrawingCanvasPage extends StatefulWidget {
 
 class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
   late ScribbleNotifier notifier;
-  List<CapturedPointerData>? _pointerHistory;
+  RecordedGestureData? _recordedData;
 
   @override
   void initState() {
@@ -119,6 +120,16 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
                         ),
                         const SizedBox(height: 12),
                         _buildStrokeToolbar(),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Persistence',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildPersistenceButtons(),
                       ],
                     ),
                   ),
@@ -171,6 +182,8 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
                         _buildColorToolbar(),
                         const SizedBox(height: 12),
                         _buildStrokeToolbar(),
+                        const SizedBox(height: 12),
+                        _buildPersistenceButtons(),
                       ],
                     ),
                   ),
@@ -207,7 +220,7 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
   IconData _getRecordIcon(RecordState recordState) {
     switch (recordState) {
       case RecordState.none:
-        return _pointerHistory != null
+        return _recordedData != null
             ? Icons.play_arrow
             : Icons.fiber_manual_record;
       case RecordState.recording:
@@ -220,7 +233,7 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
   Color _getRecordColor(RecordState recordState) {
     switch (recordState) {
       case RecordState.none:
-        return _pointerHistory != null ? Colors.green : Colors.red;
+        return _recordedData != null ? Colors.green : Colors.red;
       case RecordState.recording:
         return Colors.grey;
       case RecordState.playing:
@@ -231,19 +244,42 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
   Future<void> _toggleRecordState(RecordState recordState) async {
     switch (recordState) {
       case RecordState.none:
-        if (_pointerHistory != null) {
-          await GestureRecorder.replay(context, _pointerHistory!);
+        if (_recordedData != null) {
+          await GestureRecorder.replay(context, _recordedData!);
         } else {
           GestureRecorder.start(context);
         }
       case RecordState.recording:
         final history = await GestureRecorder.stop(context);
         setState(() {
-          _pointerHistory = history;
+          _recordedData = history;
         });
       case RecordState.playing:
         // do nothing
         break;
+    }
+  }
+
+  Future<void> _saveData() async {
+    if (_recordedData == null) return;
+    final success = await persistence.saveRecordedData(_recordedData!);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(success ? 'Data saved successfully' : 'Failed to save data'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _restoreData() async {
+    final data = await persistence.fetchRecordedData();
+    if (mounted && data != null) {
+      setState(() {
+        _recordedData = data;
+      });
     }
   }
 
@@ -588,5 +624,35 @@ class _DrawingCanvasPageState extends State<DrawingCanvasPage> {
     // Calculate luminance to determine if we need light or dark text
     final luminance = color.computeLuminance();
     return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+
+  Widget _buildPersistenceButtons() {
+    final recordState = GestureRecorder.stateOf(context);
+    final hasHistory = _recordedData != null;
+    final isRecordingOrPlaying = recordState == RecordState.recording ||
+        recordState == RecordState.playing;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton.icon(
+          onPressed: (hasHistory && !isRecordingOrPlaying) ? _saveData : null,
+          icon: const Icon(Icons.save),
+          label: const Text('Save'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ElevatedButton.icon(
+          onPressed: !isRecordingOrPlaying ? _restoreData : null,
+          icon: const Icon(Icons.restore),
+          label: const Text('Restore'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ],
+    );
   }
 }

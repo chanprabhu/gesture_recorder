@@ -8,8 +8,8 @@ The recorded data can be replayed, which means you can duplicate exactly the sam
 ## Features
 
 - [x] record / replay
-- [ ] persist recorded data
-- [ ] customize / mimic gesture event
+- [x] persist recorded data
+- [ ] edit / mimic gesture event on DevTools
 
 ## Getting started
 
@@ -40,6 +40,32 @@ Also, you can observe `RecordState` from `GestureRecorder`.
 /// observe [RecordState]. Once the state changes, observing widget is rebuilt.
 final recordState = GestureRecorder.stateOf(context);
 ```
+
+## Serialize/Deserialize
+
+The serialize/deserialize feature makes it easy to persist (save) or share your recorded gesture data.
+
+You can serialize (`RecordedGestureData` → JSON String) and deserialize (JSON String → `RecordedGestureData`) using the following:
+
+### Serialize (to save or share):
+
+```dart
+final data = await GestureRecorder.stop(context);
+final jsonString = data.toJson(); // Convert to JSON string
+```
+
+You can now store `jsonString` anywhere (file, cloud, preferences, etc).
+
+### Deserialize (to replay or load):
+
+Now you can replay loaded data:
+
+```dart
+final data = jsonString.toData();
+await GestureRecorder.replay(context, data);
+```
+
+This enables you to persist gesture sessions between app launches or share them between devices.
 
 # Contact
 

@@ -1,3 +1,7 @@
+## [0.2.0] - 2025.11.24
+
+* Added serialize/deserialize feature for persistence or sharing
+
 ## [0.1.1] - 2025.11.22
 
 * Added documentation on source code.
